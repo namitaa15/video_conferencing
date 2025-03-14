@@ -1,18 +1,23 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext"; // Manages authentication state
 import Home from "./pages/Home";
 import MeetingRoom from "./pages/MeetingRoom";
+import PastMeetings from "./pages/PastMeetings"; // Import new page
 import "./index.css";
 
 const App = () => {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/room/:roomId" element={<MeetingRoom />} />
-      </Routes>
-    </Router>
+    <AuthProvider> {/* Wrap entire app with authentication context */}
+      <Router>
+        <Routes>
+          <Route path="/" element={<Home />} /> {/* Home Page */}
+          <Route path="/room/:roomId" element={<MeetingRoom />} /> {/* Video Call Page */}
+          <Route path="/past-meetings" element={<PastMeetings />} /> {/* Past Meetings Page */}
+        </Routes>
+      </Router>
+    </AuthProvider>
   );
 };
 
