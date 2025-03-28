@@ -15,6 +15,9 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
+        console.log("✅ Inside Google Strategy callback");
+        console.log("🎯 Google Profile:", profile);
+
         let user = await User.findOne({ googleId: profile.id });
 
         if (!user) {
@@ -24,10 +27,14 @@ passport.use(
             email: profile.emails[0].value,
             avatar: profile.photos[0].value,
           });
+          console.log("🆕 New user created:", user);
+        } else {
+          console.log("👤 Existing user found:", user);
         }
 
         return done(null, user);
       } catch (error) {
+        console.error("❌ Error in Google Strategy:", error);
         return done(error, null);
       }
     }
@@ -39,7 +46,12 @@ passport.serializeUser((user, done) => {
 });
 
 passport.deserializeUser(async (id, done) => {
-  const user = await User.findById(id);
-  done(null, user);
+  try {
+    const user = await User.findById(id);
+    done(null, user);
+  } catch (error) {
+    console.error("❌ Error in deserializeUser:", error);
+    done(error, null);
+  }
 });
 

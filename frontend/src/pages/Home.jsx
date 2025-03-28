@@ -1,24 +1,50 @@
+import axios from "axios";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { v4 as uuidV4 } from "uuid"; // Generates unique meeting codes
 import Navbar from "../components/Navbar"; // Import Navbar
-
+import { useAuth } from "../context/AuthContext"; // To access logged-in user
 const Home = () => {
+  const { user } = useAuth();
+
   const [roomId, setRoomId] = useState("");
   const navigate = useNavigate();
 
   // Function to start a new meeting
-  const startMeeting = () => {
-    const newRoomId = uuidV4(); // Generate a unique room ID
-    navigate(`/room/${newRoomId}`); // Redirect to meeting page
+  const startMeeting = async () => {
+    try {
+      const res = await axios.post(
+        "http://localhost:5001/api/meetings/create",
+        {},
+        { withCredentials: true }
+      );
+  
+      const meetingId = res.data.meetingId;
+      navigate(`/room/${meetingId}`);
+    } catch (error) {
+      console.error("Error creating meeting:", error);
+      alert("Failed to create meeting.");
+    }
   };
 
   // Function to join a meeting
-  const joinMeeting = () => {
-    if (roomId.trim() !== "") {
+  const joinMeeting = async () => {
+    if (roomId.trim() === "") return;
+  
+    try {
+      await axios.post(
+        "http://localhost:5001/api/meetings/join",
+        { meetingId: roomId },
+        { withCredentials: true }
+      );
+  
       navigate(`/room/${roomId}`);
+    } catch (error) {
+      console.error("Error joining meeting:", error);
+      alert("Failed to join meeting. Please check the Meeting ID.");
     }
   };
+  
 
   return (
     <div className="min-h-screen bg-gradient-to-r from-purple-600 to-blue-600 text-white">
