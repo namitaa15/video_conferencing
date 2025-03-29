@@ -6,46 +6,13 @@ const session = require("express-session");
 const cors = require("cors");
 const mongoose = require("mongoose");
 require("dotenv").config();
-require("./config/passport"); // Google OAuth setup
+require("./config/passport");
 
 const authRoutes = require("./routes/authRoutes");
-const meetingRoutes = require("./routes/meetingRoutes"); // Don't forget this if you're using meeting APIs
+const meetingRoutes = require("./routes/meetingRoutes");
 
 const app = express();
 const server = http.createServer(app);
-
-// ✅ Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("✅ Connected to MongoDB"))
-.catch((err) => console.error("❌ MongoDB connection error:", err));
-
-// ✅ CORS Middleware (Allow frontend to connect with credentials)
-app.use(cors({
-  origin: "http://localhost:5173",
-  methods: ["GET", "POST"],
-  credentials: true
-}));
-
-// ✅ Middleware
-app.use(express.json()); // To parse JSON bodies
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "your_secret_key",
-    resave: false,
-    saveUninitialized: true,
-  })
-);
-app.use(passport.initialize());
-app.use(passport.session());
-
-// ✅ Routes
-app.use("/api/auth", authRoutes);
-app.use("/api/meetings", meetingRoutes); // For create/join/past meetings
-
-// ✅ WebSocket Setup
 const io = new Server(server, {
   cors: {
     origin: "http://localhost:5173",
@@ -53,17 +20,49 @@ const io = new Server(server, {
   },
 });
 
+// ✅ MongoDB
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
+
+// ✅ Middleware
+app.use(cors({
+  origin: "http://localhost:5173",
+  methods: ["GET", "POST"],
+  credentials: true,
+}));
+app.use(express.json());
+app.use(session({
+  secret: process.env.SESSION_SECRET || "your_secret_key",
+  resave: false,
+  saveUninitialized: true,
+}));
+app.use(passport.initialize());
+app.use(passport.session());
+
+// ✅ Routes
+app.use("/api/auth", authRoutes);
+app.use("/api/meetings", meetingRoutes);
+
+// ✅ Socket.io with Real Names
+const userNames = {}; // socket.id => full name
+
 io.on("connection", (socket) => {
   console.log(`🔗 New WebSocket connection: ${socket.id}`);
 
-  // 🚪 Join request
-  socket.on("join-meeting", ({ meetingId, userId }) => {
-    console.log(`📢 User ${userId} wants to join ${meetingId}`);
+  // Join Meeting
+  socket.on("join-meeting", ({ meetingId, userId, name }) => {
+    userNames[socket.id] = name;
+    console.log(`📢 ${name} (${userId}) wants to join ${meetingId}`);
     socket.join(meetingId);
     socket.to(meetingId).emit("request-join", { userId });
   });
 
-  // ✅ Host controls
+  // Host Approve/Deny
   socket.on("approve-user", ({ meetingId, userId }) => {
     io.to(userId).emit("approved");
     io.to(meetingId).emit("user-joined", { userId });
@@ -73,7 +72,7 @@ io.on("connection", (socket) => {
     io.to(userId).emit("denied");
   });
 
-  // 🔁 WebRTC
+  // WebRTC Exchange
   socket.on("offer", (data) => {
     io.to(data.meetingId).emit("offer", data);
   });
@@ -86,24 +85,29 @@ io.on("connection", (socket) => {
     io.to(data.meetingId).emit("ice-candidate", data);
   });
 
-  // 💬 Chat
-  socket.on("chat-message", ({ meetingId, userId, message }) => {
-    io.to(meetingId).emit("chat-message", { userId, message });
+  // 💬 Chat with Real Name & Timestamp
+  socket.on("chat-message", ({ meetingId, message }) => {
+    io.to(meetingId).emit("chat-message", {
+      userId: socket.id,
+      name: userNames[socket.id],
+      message,
+      time: new Date().toLocaleTimeString(),
+    });
   });
 
-  // 🔇 Mute
-  socket.on("mute-user", ({ meetingId }) => {
-    socket.to(meetingId).emit("force-mute");
+  // Mute / Kick
+  socket.on("mute-user", ({ targetId }) => {
+    io.to(targetId).emit("force-mute");
+  });  
+  socket.on("kick-user", ({ targetId }) => {
+    io.to(targetId).emit("force-kick");
   });
+  
 
-  // ❌ Kick
-  socket.on("kick-user", ({ meetingId }) => {
-    socket.to(meetingId).emit("force-kick");
-  });
-
-  // 🔌 Disconnect
+  // Disconnect Cleanup
   socket.on("disconnect", () => {
-    console.log(`❌ User disconnected: ${socket.id}`);
+    console.log(`❌ Disconnected: ${socket.id}`);
+    delete userNames[socket.id];
   });
 });
 

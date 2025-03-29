@@ -2,17 +2,32 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import axios from "axios";
+import { useAuth } from "../context/AuthContext";
 
 const PastMeetings = () => {
   const [meetings, setMeetings] = useState([]);
   const navigate = useNavigate();
+  const { token } = useAuth(); // ✅ get token from context
 
   // Fetch past meetings from the backend
   useEffect(() => {
-    axios.get("http://localhost:5001/api/meetings/past")
-      .then((res) => setMeetings(res.data))
-      .catch((err) => console.error("Error fetching meetings:", err));
-  }, []);
+    const fetchMeetings = async () => {
+      try {
+        const res = await axios.get("http://localhost:5001/api/meetings/past", {
+          headers: {
+            Authorization: `Bearer ${token}`, // ✅ send token in request
+          },
+        });
+        setMeetings(res.data);
+      } catch (err) {
+        console.error("Error fetching meetings:", err);
+      }
+    };
+
+    if (token) {
+      fetchMeetings();
+    }
+  }, [token]); // ✅ run effect only when token is available
 
   return (
     <div className="min-h-screen bg-gradient-to-r from-gray-800 to-black text-white">
@@ -30,20 +45,15 @@ const PastMeetings = () => {
                 <p className="text-gray-400">📅 Date: {new Date(meeting.createdAt).toLocaleString()}</p>
                 <p className="text-gray-400">👥 Participants: {meeting.participants.length}</p>
 
-                <div className="flex space-x-4 mt-4">
-                  <button
-                    className="bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded-md shadow-md"
-                    onClick={() => navigate(`/room/${meeting.meetingId}`)}
-                  >
-                    🔄 Rejoin Meeting
-                  </button>
-                  <button
-                    className="bg-green-500 hover:bg-green-700 px-4 py-2 rounded-md shadow-md"
-                    onClick={() => alert("Chat feature coming soon!")}
-                  >
-                    💬 View Chat
-                  </button>
-                </div>
+                <div className="flex flex-col sm:flex-row gap-3 mt-4">
+  <button className="bg-blue-500 hover:bg-blue-700 px-4 py-2 rounded-md shadow-md w-full sm:w-auto">
+    🔄 Rejoin Meeting
+  </button>
+  <button className="bg-green-500 hover:bg-green-700 px-4 py-2 rounded-md shadow-md w-full sm:w-auto">
+    💬 View Chat
+  </button>
+</div>
+
               </div>
             ))}
           </div>
