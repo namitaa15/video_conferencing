@@ -32,8 +32,8 @@ const Home = () => {
     if (roomId.trim() === "") return;
   
     try {
-      await axios.post(
-        "http://localhost:5001/api/meetings/join",
+      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/meetings/past`
+      ,
         { meetingId: roomId },
         { withCredentials: true }
       );
