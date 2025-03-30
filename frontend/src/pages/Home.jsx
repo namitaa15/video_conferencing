@@ -32,7 +32,7 @@ const Home = () => {
     if (roomId.trim() === "") return;
   
     try {
-      await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/meetings/past`
+      await axios.post(`${import.meta.env.VITE_BACKEND_URL}/api/meetings/join`
       ,
         { meetingId: roomId },
         { withCredentials: true }

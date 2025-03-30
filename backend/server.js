@@ -31,7 +31,7 @@ mongoose
 
 // ✅ Middleware
 app.use(cors({
-  origin: "https://video-conferencing-bice.vercel.app/",
+  origin: "https://video-conferencing-bice.vercel.app",
   methods: ["GET", "POST"],
   credentials: true,
 }));
