@@ -13,7 +13,7 @@ const PastMeetings = () => {
   useEffect(() => {
     const fetchMeetings = async () => {
       try {
-        const res = await axios.get("http://localhost:5001/api/meetings/past", {
+        const res = await axios.get(`${import.meta.env.VITE_API_BASE_URL}/api/meetings/join`, {
           headers: {
             Authorization: `Bearer ${token}`, // ✅ send token in request
           },

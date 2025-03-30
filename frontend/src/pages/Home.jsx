@@ -13,8 +13,8 @@ const Home = () => {
   // Function to start a new meeting
   const startMeeting = async () => {
     try {
-      const res = await axios.post(
-        "http://localhost:5001/api/meetings/create",
+      const res = await axios.post(`${import.meta.env.VITE_API_BASE_URL}/api/meetings/create`
+        ,
         {},
         { withCredentials: true }
       );

@@ -36,7 +36,7 @@ const MeetingRoom = () => {
         }
 
         setIsJoined(true);
-        socket.current = io("http://localhost:5001");
+        socket.current = io("https://video-conferencing-ep41.onrender.com");
 
         socket.current.on("connect", () => {
           console.log("✅ Connected to socket:", socket.current.id);
