@@ -11,7 +11,8 @@ router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
   (req, res) => {
-    res.redirect("http://localhost:5173/"); // Redirect to frontend dashboard after login
+    res.redirect("https://video-conferencing-bice.vercel.app/");
+
   }
 );
 
