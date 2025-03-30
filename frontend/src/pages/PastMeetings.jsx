@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import axios from "axios";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/auth";
 
 const PastMeetings = () => {
   const [meetings, setMeetings] = useState([]);

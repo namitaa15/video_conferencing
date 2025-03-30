@@ -2,9 +2,6 @@ const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const User = require("../models/User");
 
-// Debugging: Print environment variables to check if they are loaded
-console.log("🔍 GOOGLE_CLIENT_ID:", process.env.GOOGLE_CLIENT_ID);
-console.log("🔍 GOOGLE_CLIENT_SECRET:", process.env.GOOGLE_CLIENT_SECRET);
 
 passport.use(
   new GoogleStrategy(
@@ -16,7 +13,6 @@ passport.use(
     async (accessToken, refreshToken, profile, done) => {
       try {
         console.log("✅ Inside Google Strategy callback");
-        console.log("🎯 Google Profile:", profile);
 
         let user = await User.findOne({ googleId: profile.id });
 
@@ -28,10 +24,7 @@ passport.use(
             avatar: profile.photos[0].value,
           });
           console.log("🆕 New user created:", user);
-        } else {
-          console.log("👤 Existing user found:", user);
         }
-
         return done(null, user);
       } catch (error) {
         console.error("❌ Error in Google Strategy:", error);
@@ -48,10 +41,12 @@ passport.serializeUser((user, done) => {
 passport.deserializeUser(async (id, done) => {
   try {
     const user = await User.findById(id);
+    console.log("✅ User found:", user);
     done(null, user);
   } catch (error) {
     console.error("❌ Error in deserializeUser:", error);
     done(error, null);
   }
 });
+
 

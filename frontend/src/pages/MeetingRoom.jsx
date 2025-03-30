@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "react-router-dom";
 import { io } from "socket.io-client";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../hooks/auth";
+
+
 const MeetingRoom = () => {
   const { user } = useAuth();
   const [userAvatars, setUserAvatars] = useState({});
@@ -25,6 +27,7 @@ const MeetingRoom = () => {
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
   };
 
+
   useEffect(() => {
     const startCall = async () => {
       try {
@@ -36,7 +39,8 @@ const MeetingRoom = () => {
         }
 
         setIsJoined(true);
-        socket.current = io("https://video-conferencing-ep41.onrender.com");
+        // use env vars for url
+        socket.current = io(import.meta.env.VITE_BACKEND_URL, { transports: ["websocket"] });
 
         socket.current.on("connect", () => {
           console.log("✅ Connected to socket:", socket.current.id);
@@ -60,8 +64,8 @@ const MeetingRoom = () => {
         });
 
         // 💬 Chat
-        socket.current.on("chat-message", ({ userId, name,avatar, message, time }) => {
-          setMessages((prev) => [...prev, { userId, name,avatar, message, time }]);
+        socket.current.on("chat-message", ({ userId, name, avatar, message, time }) => {
+          setMessages((prev) => [...prev, { userId, name, avatar, message, time }]);
           chatBottomRef.current?.scrollIntoView({ behavior: "smooth" });
 
         });
@@ -85,7 +89,7 @@ const MeetingRoom = () => {
         });
 
         // 👥 Handle new user ready (host connects)
-        socket.current.on("user-joined", async ({ userId, name ,avatar}) => {
+        socket.current.on("user-joined", async ({ userId, name, avatar }) => {
           setUserNames(prev => ({ ...prev, [userId]: name }));
           setUserAvatars(prev => ({ ...prev, [userId]: avatar })); // 🆕
           const pc = new RTCPeerConnection(config);
@@ -175,10 +179,10 @@ const MeetingRoom = () => {
 
         // 🔇 Listen for forced mute
         socket.current.on("force-mute", () => {
-          if (remoteVideoRef.current) {
-            remoteVideoRef.current.muted = true;
-            console.log("🔇 You were muted by the host");
-          }
+          // if (remoteVideoRef.current) {
+          //   remoteVideoRef.current.muted = true;
+          // }
+          console.log("🔇 You were muted by the host");
         });
 
         // ❌ Listen for forced kick
@@ -223,9 +227,9 @@ const MeetingRoom = () => {
       name: user.name,
       avatar: user.avatar,
       message: newMessage,
-    });    
+    });
 
-    
+
   };
 
   const startScreenShare = async () => {
@@ -254,9 +258,9 @@ const MeetingRoom = () => {
     }
   };
 
-  const muteRemote = () => {
-    socket.current.emit("mute-user", { meetingId: roomId });
-  };
+  // const muteRemote = () => {
+  //   socket.current.emit("mute-user", { meetingId: roomId });
+  // };
   const toggleMute = () => {
     if (!userStream.current) return;
 
@@ -276,14 +280,6 @@ const MeetingRoom = () => {
     }
   };
 
-  const kickRemote = () => {
-    const confirmed = window.confirm("Are you sure you want to kick this user?");
-    if (confirmed) {
-      socket.current.emit("kick-user", { meetingId: roomId });
-    }
-  };
-
-
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white text-center p-6">
       <h1 className="text-4xl font-extrabold mb-6">Meeting Room: {roomId}</h1>
@@ -293,40 +289,40 @@ const MeetingRoom = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 w-full justify-items-center">
         {/* Local video */}
         <div className="flex flex-col items-center">
-        <video ref={localVideoRef} autoPlay playsInline muted className="w-96 h-72 rounded-xl border-2 border-white shadow-lg" />
-        <div className="flex items-center gap-2 mt-1 text-sm">
-  <img
-    src={user.avatar || "/default-avatar.png"}
-    alt="You"
-    className="w-6 h-6 rounded-full"
-  />
-  <span>{user.name || "You"}</span>
-</div>
+          <video ref={localVideoRef} autoPlay playsInline muted className="w-96 h-72 rounded-xl border-2 border-white shadow-lg" />
+          <div className="flex items-center gap-2 mt-1 text-sm">
+            <img
+              src={user.avatar || "/default-avatar.png"}
+              alt="You"
+              className="w-6 h-6 rounded-full"
+            />
+            <span>{user.name || "You"}</span>
+          </div>
 
         </div>
 
         {/* Remote videos */}
         {Object.entries(remoteStreams).map(([userId, stream]) => (
           <div key={userId} className="flex flex-col items-center bg-gray-800 p-2 rounded-lg">
-       <video
-  autoPlay
-  playsInline
-  className="w-[600px] h-[500px] object-cover rounded-2xl border-4 border-white shadow-xl"
-  ref={(video) => {
-    if (video) video.srcObject = stream;
-  }}
-/>
+            <video
+              autoPlay
+              playsInline
+              className="w-[600px] h-[500px] object-cover rounded-2xl border-4 border-white shadow-xl"
+              ref={(video) => {
+                if (video) video.srcObject = stream;
+              }}
+            />
 
 
-<div className="flex items-center gap-2 mt-1 text-sm">
-  <img
-    src={userAvatars[userId] || "/default-avatar.png"}
-    alt="avatar"
-    className="w-6 h-6 rounded-full"
-  />
-  <span>{userNames[userId] || "Participant"}</span>
-</div>
- 
+            <div className="flex items-center gap-2 mt-1 text-sm">
+              <img
+                src={userAvatars[userId] || "/default-avatar.png"}
+                alt="avatar"
+                className="w-6 h-6 rounded-full"
+              />
+              <span>{userNames[userId] || "Participant"}</span>
+            </div>
+
 
             {/* 🎯 Host Controls: Per User */}
             {isHost.current && (
@@ -396,31 +392,32 @@ const MeetingRoom = () => {
         <h2 className="text-xl font-bold mb-2">💬 Chat</h2>
         <div className="space-y-2 max-h-60 overflow-y-auto">
           {messages.map((msg, index) => (
-           <div key={index} className="bg-gray-100 p-2 rounded-md shadow-sm flex items-start gap-2">
-           <div>
-             <div className="font-semibold text-sm">{msg.name}</div>
-             <div className="text-xs text-gray-500">{msg.time}</div>
-             <div>{msg.message}</div>
-           </div>
-         </div>              
+            <div key={index} className="bg-gray-100 p-2 rounded-md shadow-sm flex items-start gap-2">
+              <div>
+                <div className="font-semibold text-sm">{msg.name}</div>
+                <div className="text-xs text-gray-500">{msg.time}</div>
+                <div>{msg.message}</div>
+              </div>
+            </div>
           ))}
           <div ref={chatBottomRef} />
 
         </div>
         <div className="flex mt-4 space-x-2">
-        <input
-  type="text"
-  value={newMessage}
-  onChange={(e) => setNewMessage(e.target.value)}
-  onKeyDown={(e) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      sendMessage();
-    }
-  }}
-  placeholder="Type a message..."
-  className="flex-1 p-2 rounded-md border border-gray-300"
-/>
+          <input
+            type="text"
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                sendMessage();
+                setNewMessage("");
+              }
+            }}
+            placeholder="Type a message..."
+            className="flex-1 p-2 rounded-md border border-gray-300"
+          />
 
           <button
             onClick={sendMessage}

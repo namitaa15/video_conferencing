@@ -1,6 +1,8 @@
 const express = require("express");
 const passport = require("passport");
-
+// import dotenv
+const dotenv = require("dotenv");
+dotenv.config();
 const router = express.Router();
 
 // 🔹 Google OAuth Login Route
@@ -11,8 +13,7 @@ router.get(
   "/google/callback",
   passport.authenticate("google", { failureRedirect: "/" }),
   (req, res) => {
-    res.redirect("https://video-conferencing-bice.vercel.app/");
-
+    res.redirect(process.env.CORS_ORIGIN);
   }
 );
 
