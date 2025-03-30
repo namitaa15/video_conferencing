@@ -115,7 +115,9 @@ io.on("connection", (socket) => {
     delete userNames[socket.id];
   });
 });
-
+app.get("/", (req, res) => {
+  res.send("🎉 Backend is running! This is the API server.");
+});
 // ✅ Start Server
 const PORT = process.env.PORT || 5001;
 server.listen(PORT, () => {
