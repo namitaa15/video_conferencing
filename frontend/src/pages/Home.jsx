@@ -44,47 +44,40 @@ const Home = () => {
       alert("Failed to join meeting. Please check the Meeting ID.");
     }
   };
-  
-
   return (
     <div className="min-h-screen bg-gradient-to-r from-purple-600 to-blue-600 text-white">
-      {/* Navbar */}
       <Navbar />
   
-      {/* Main Content */}
       <div className="flex flex-col items-center justify-center text-center p-6 mt-12">
         {/* Heading */}
-        <h1 className="text-4xl sm:text-5xl font-extrabold mb-6 flex items-center gap-2 drop-shadow-lg">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-4 sm:mb-6 flex flex-wrap justify-center gap-2 drop-shadow-lg text-center">
           Welcome {user?.name}! 👋
         </h1>
   
-        <p className="text-lg text-white/80 max-w-md mb-8">
+        <p className="text-base sm:text-lg text-white/80 max-w-xs sm:max-w-md mb-6 sm:mb-8">
           Create or join real-time video calls with screen sharing, host controls & chat support.
         </p>
   
-        {/* Start + Join Section (Responsive) */}
-        <div className="w-full max-w-xl flex flex-col sm:flex-row items-center gap-4 mt-2 bg-white bg-opacity-20 p-6 rounded-lg shadow-lg backdrop-blur-md">
-          {/* Start Meeting */}
+        {/* Start + Join Section */}
+        <div className="w-full max-w-md flex flex-col gap-4 sm:gap-3 bg-white bg-opacity-20 p-6 rounded-xl shadow-lg backdrop-blur-md">
           <button
             onClick={startMeeting}
-            className="bg-blue-500 hover:bg-blue-700 px-6 py-3 text-base sm:text-lg font-semibold rounded-full shadow-md transition-all duration-300 w-full sm:w-auto"
+            className="bg-blue-500 hover:bg-blue-700 px-6 py-3 text-sm sm:text-lg font-semibold rounded-full shadow-md transition-all duration-300 w-full"
           >
             ➕ Start New Meeting
           </button>
   
-          {/* Input for Join */}
           <input
             type="text"
             placeholder="Enter Meeting Code"
             value={roomId}
             onChange={(e) => setRoomId(e.target.value)}
-            className="flex-1 px-4 py-2 text-black text-base sm:text-lg rounded-full outline-none border-none shadow-md focus:ring-2 focus:ring-purple-400 transition-all w-full"
+            className="px-4 py-2 text-black text-sm sm:text-lg rounded-full outline-none border-none shadow-md focus:ring-2 focus:ring-purple-400 transition-all w-full"
           />
   
-          {/* Join Button */}
           <button
             onClick={joinMeeting}
-            className="bg-green-500 hover:bg-green-700 px-6 py-3 text-base sm:text-lg rounded-full shadow-md transition-all duration-300 w-full sm:w-auto"
+            className="bg-green-500 hover:bg-green-700 px-6 py-3 text-sm sm:text-lg font-semibold rounded-full shadow-md transition-all duration-300 w-full"
           >
             🔗 Join
           </button>
@@ -92,6 +85,8 @@ const Home = () => {
       </div>
     </div>
   );
-};
+};  
+
+  
 
 export default Home;
