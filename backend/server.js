@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
@@ -5,66 +6,74 @@ const passport = require("passport");
 const session = require("express-session");
 const cors = require("cors");
 const mongoose = require("mongoose");
-require("dotenv").config();
-require("./config/passport");
+
+require("./config/passport"); // Google OAuth config
 
 const authRoutes = require("./routes/authRoutes");
 const meetingRoutes = require("./routes/meetingRoutes");
 
 const app = express();
 const server = http.createServer(app);
+
+// ✅ Socket.io setup with CORS
 const io = new Server(server, {
   cors: {
-    origin: process.env.CORS_ORIGIN,
+    origin: process.env.CORS_ORIGIN, // your frontend e.g., vercel
     methods: ["GET", "POST"],
-  },
+    credentials: true
+  }
 });
 
-// ✅ MongoDB
-mongoose
-  .connect(process.env.MONGO_URI, {
-  })
+// ✅ MongoDB connection
+mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// ✅ Middleware
+// ✅ Express Middlewares
 app.use(cors({
   origin: process.env.CORS_ORIGIN,
   methods: ["GET", "POST"],
-  credentials: true,
+  credentials: true
 }));
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// ✅ Secure Session (important for Google login to work)
 app.use(session({
-  secret: process.env.SESSION_SECRET || "your_secret_key",
+  secret: process.env.SESSION_SECRET,
   resave: false,
-  saveUninitialized: false
+  saveUninitialized: false,
+  cookie: {
+    secure: true,          // important for HTTPS
+    sameSite: "none"       // required for cross-origin cookies
+  }
 }));
 
+// ✅ Passport for Google OAuth
+app.use(passport.initialize());
 app.use(passport.session());
-app.use(passport.authenticate('session'));
-
 
 // ✅ Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/meetings", meetingRoutes);
 
-// ✅ Socket.io with Real Names
-const userNames = {}; // socket.id => full name
+// ✅ Test route
+app.get("/", (req, res) => {
+  res.send("🎉 Backend is running! This is the API server.");
+});
+
+// ✅ WebSocket logic
+const userNames = {}; // socket.id => name
 
 io.on("connection", (socket) => {
   console.log(`🔗 New WebSocket connection: ${socket.id}`);
 
-  // Join Meeting
-  socket.on("join-meeting", ({ meetingId, userId, name }) => {
+  socket.on("join-meeting", ({ meetingId, userId, name, avatar }) => {
     userNames[socket.id] = name;
-    console.log(`📢 ${name} (${userId}) wants to join ${meetingId}`);
     socket.join(meetingId);
     socket.to(meetingId).emit("request-join", { userId });
   });
 
-  // Host Approve/Deny
   socket.on("approve-user", ({ meetingId, userId }) => {
     io.to(userId).emit("approved");
     io.to(meetingId).emit("user-joined", { userId });
@@ -74,7 +83,7 @@ io.on("connection", (socket) => {
     io.to(userId).emit("denied");
   });
 
-  // WebRTC Exchange
+  // WebRTC Signaling
   socket.on("offer", (data) => {
     io.to(data.meetingId).emit("offer", data);
   });
@@ -87,35 +96,33 @@ io.on("connection", (socket) => {
     io.to(data.meetingId).emit("ice-candidate", data);
   });
 
-  // 💬 Chat with Real Name & Timestamp
-  socket.on("chat-message", ({ meetingId, message }) => {
+  // 💬 Chat
+  socket.on("chat-message", ({ meetingId, name, avatar, message }) => {
     io.to(meetingId).emit("chat-message", {
       userId: socket.id,
-      name: userNames[socket.id],
+      name,
+      avatar,
       message,
-      time: new Date().toLocaleTimeString(),
+      time: new Date().toLocaleTimeString()
     });
   });
 
-  // Mute / Kick
+  // Host Controls
   socket.on("mute-user", ({ targetId }) => {
     io.to(targetId).emit("force-mute");
   });
+
   socket.on("kick-user", ({ targetId }) => {
     io.to(targetId).emit("force-kick");
   });
 
-
-  // Disconnect Cleanup
   socket.on("disconnect", () => {
     console.log(`❌ Disconnected: ${socket.id}`);
     delete userNames[socket.id];
   });
 });
-app.get("/", (req, res) => {
-  res.send("🎉 Backend is running! This is the API server.");
-});
-// ✅ Start Server
+
+// ✅ Start server
 const PORT = process.env.PORT || 5001;
 server.listen(PORT, () => {
   console.log(`✅ Server running on port ${PORT}`);
