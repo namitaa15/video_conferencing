@@ -38,6 +38,9 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
+app.set("trust proxy", 1); // 🚨 Needed for secure cookies on Render
+
+
 // ✅ Secure Session (important for Google login to work)
 app.use(
   session({
