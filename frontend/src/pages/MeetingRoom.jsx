@@ -110,6 +110,7 @@ const MeetingRoom = () => {
           };
 
           pc.ontrack = (event) => {
+            console.log("🎥 Track received from", userId || to);
             setRemoteStreams((prev) => ({
               ...prev,
               [userId]: event.streams[0],
@@ -146,6 +147,7 @@ const MeetingRoom = () => {
           };
 
           pc.ontrack = (event) => {
+            console.log("🎥 Track received from", userId || to);
             setRemoteStreams((prev) => ({
               ...prev,
               [to]: event.streams[0],
@@ -176,6 +178,34 @@ const MeetingRoom = () => {
             await pc.addIceCandidate(candidate);
           }
         });
+        // 🚫 Remove peer and UI when a user is disconnected or kicked
+socket.current.on("user-disconnected", ({ userId }) => {
+  // 1. Close peer connection
+  if (peerConnections.current[userId]) {
+    peerConnections.current[userId].close();
+    delete peerConnections.current[userId];
+  }
+
+  // 2. Remove from video UI
+  setRemoteStreams((prev) => {
+    const updated = { ...prev };
+    delete updated[userId];
+    return updated;
+  });
+
+  setUserAvatars((prev) => {
+    const updated = { ...prev };
+    delete updated[userId];
+    return updated;
+  });
+
+  setUserNames((prev) => {
+    const updated = { ...prev };
+    delete updated[userId];
+    return updated;
+  });
+});
+
 
         // 🔇 Listen for forced mute
         socket.current.on("force-mute", () => {

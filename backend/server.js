@@ -121,11 +121,18 @@ io.on("connection", (socket) => {
   socket.on("kick-user", ({ targetId }) => {
     io.to(targetId).emit("force-kick");
   });
-
   socket.on("disconnect", () => {
     console.log(`❌ Disconnected: ${socket.id}`);
     delete userNames[socket.id];
+  
+    // 🚨 Tell others that this user left
+    for (let roomId of socket.rooms) {
+      if (roomId !== socket.id) {
+        io.to(roomId).emit("user-disconnected", { userId: socket.id });
+      }
+    }
   });
+  
 });
 
 // ✅ Start server
