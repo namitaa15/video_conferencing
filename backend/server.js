@@ -39,15 +39,18 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
 // ✅ Secure Session (important for Google login to work)
-app.use(session({
-  secret: process.env.SESSION_SECRET,
-  resave: false,
-  saveUninitialized: false,
-  cookie: {
-    secure: true,          // important for HTTPS
-    sameSite: "none"       // required for cross-origin cookies
-  }
-}));
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: true,           // ✅ IMPORTANT: true for HTTPS
+      sameSite: "none",       // ✅ IMPORTANT: for cross-site cookies
+    },
+  })
+);
+
 
 // ✅ Passport for Google OAuth
 app.use(passport.initialize());
