@@ -91,16 +91,17 @@ io.on("connection", (socket) => {
 
   // WebRTC Signaling
   socket.on("offer", (data) => {
-    io.to(data.meetingId).emit("offer", data);
+    io.to(data.to).emit("offer", data);          // ✅ send ONLY to specific peer
   });
-
+  
   socket.on("answer", (data) => {
-    io.to(data.meetingId).emit("answer", data);
+    io.to(data.to).emit("answer", data);
   });
-
+  
   socket.on("ice-candidate", (data) => {
-    io.to(data.meetingId).emit("ice-candidate", data);
+    io.to(data.to).emit("ice-candidate", data);
   });
+  
 
   // 💬 Chat
   socket.on("chat-message", ({ meetingId, name, avatar, message }) => {
