@@ -91,93 +91,104 @@ const MeetingRoom = () => {
         // 👥 Handle new user ready (host connects)
         socket.current.on("user-joined", async ({ userId, name, avatar }) => {
           setUserNames(prev => ({ ...prev, [userId]: name }));
-          setUserAvatars(prev => ({ ...prev, [userId]: avatar })); // 🆕
+          setUserAvatars(prev => ({ ...prev, [userId]: avatar }));
+        
+          // Avoid duplicate connections!
+          if (peerConnections.current[userId]) return;
+        
           const pc = new RTCPeerConnection(config);
           peerConnections.current[userId] = pc;
-
+        
           userStream.current.getTracks().forEach((track) => {
             pc.addTrack(track, userStream.current);
           });
-
+        
           pc.onicecandidate = (event) => {
             if (event.candidate) {
               socket.current.emit("ice-candidate", {
                 meetingId: roomId,
                 candidate: event.candidate,
                 to: userId,
+                from: socket.current.id
               });
             }
           };
-
+        
           pc.ontrack = (event) => {
-            console.log("🎥 Track received from", userId || to);
             setRemoteStreams((prev) => ({
               ...prev,
-              [userId]: event.streams[0],
+              [userId]: event.streams[0]
             }));
           };
-
+        
           const offer = await pc.createOffer();
           await pc.setLocalDescription(offer);
-
+        
           socket.current.emit("offer", {
             meetingId: roomId,
             offer,
             to: userId,
+            from: socket.current.id
           });
         });
 
 
-        socket.current.on("offer", async ({ offer, to }) => {
-          const pc = new RTCPeerConnection(config);
-          peerConnections.current[to] = pc;
+// --- PARTICIPANT: when an offer is received from the host ---
+socket.current.on("offer", async ({ offer, from }) => {
+  // Avoid duplicate connections!
+  if (peerConnections.current[from]) return;
 
-          userStream.current.getTracks().forEach((track) => {
-            pc.addTrack(track, userStream.current);
-          });
+  const pc = new RTCPeerConnection(config);
+  peerConnections.current[from] = pc;
 
-          pc.onicecandidate = (event) => {
-            if (event.candidate) {
-              socket.current.emit("ice-candidate", {
-                meetingId: roomId,
-                candidate: event.candidate,
-                to,
-              });
-            }
-          };
+  userStream.current.getTracks().forEach((track) => {
+    pc.addTrack(track, userStream.current);
+  });
 
-          pc.ontrack = (event) => {
-            console.log("🎥 Track received from", userId || to);
-            setRemoteStreams((prev) => ({
-              ...prev,
-              [to]: event.streams[0],
-            }));
-          };
+  pc.onicecandidate = (event) => {
+    if (event.candidate) {
+      socket.current.emit("ice-candidate", {
+        meetingId: roomId,
+        candidate: event.candidate,
+        to: from,               // Send ICE to host
+        from: socket.current.id // This participant's socket id
+      });
+    }
+  };
 
-          await pc.setRemoteDescription(offer);
-          const answer = await pc.createAnswer();
-          await pc.setLocalDescription(answer);
+  pc.ontrack = (event) => {
+    console.log("🎥 Track received from", from);
+    setRemoteStreams((prev) => ({
+      ...prev,
+      [from]: event.streams[0],
+    }));
+  };
 
-          socket.current.emit("answer", {
-            meetingId: roomId,
-            answer,
-            to,
-          });
-        });
+  await pc.setRemoteDescription(offer);
+  const answer = await pc.createAnswer();
+  await pc.setLocalDescription(answer);
 
+  socket.current.emit("answer", {
+    meetingId: roomId,
+    answer,
+    to: from,                  // Send answer to host
+    from: socket.current.id    // This participant's socket id
+  });
+});
+// ---- ANSWER ----
+socket.current.on("answer", async ({ answer, from }) => {
+  const pc = peerConnections.current[from]; // 👈 Use 'from' (remote peer)
+  if (pc) await pc.setRemoteDescription(answer);
+});
+// ---- ICE CANDIDATE ----
+socket.current.on("ice-candidate", async ({ candidate, from }) => {
+  const pc = peerConnections.current[from]; // 👈 Use 'from' (remote peer)
+  if (pc && candidate) {
+    await pc.addIceCandidate(candidate);
+  }
+});
 
-        socket.current.on("answer", async ({ answer, to }) => {
-          const pc = peerConnections.current[to];
-          if (pc) await pc.setRemoteDescription(answer);
-        });
-
-
-        socket.current.on("ice-candidate", async ({ candidate, to }) => {
-          const pc = peerConnections.current[to];
-          if (pc && candidate) {
-            await pc.addIceCandidate(candidate);
-          }
-        });
+        
         // 🚫 Remove peer and UI when a user is disconnected or kicked
 socket.current.on("user-disconnected", ({ userId }) => {
   // 1. Close peer connection
@@ -287,10 +298,6 @@ socket.current.on("user-disconnected", ({ userId }) => {
       console.error("❌ Screen sharing failed:", error);
     }
   };
-
-  // const muteRemote = () => {
-  //   socket.current.emit("mute-user", { meetingId: roomId });
-  // };
   const toggleMute = () => {
     if (!userStream.current) return;
 
