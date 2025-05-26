@@ -30,6 +30,22 @@ Create or join video meetings with screen sharing, host controls, chat support, 
 
 ---
 
+---
+## 🖼️ Screenshots
+
+### Home Page (Not logged in)
+![Home Page](screenshots/Screenshot%202025-05-26%20at%202.14.34%E2%80%AFPM.png)
+
+### Authenticated Home
+![Authenticated Home](screenshots/Screenshot%202025-05-26%20at%202.15.00%E2%80%AFPM.png)
+
+### Past Meetings
+![Past Meetings](screenshots/Screenshot%202025-05-26%20at%202.15.15%E2%80%AFPM.png)
+
+### Meeting Room
+![Meeting Room](screenshots/Screenshot%202025-05-26%20at%202.16.06%E2%80%AFPM.png)
+---
+
 ## ⚡ Demo
 
 [Live App Link](https://video-conferencing-bice.vercel.app)  
