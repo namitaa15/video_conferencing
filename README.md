@@ -18,22 +18,6 @@ Create or join video meetings with screen sharing, host controls, chat support, 
 
 ---
 
-## 🖼️ Screenshots
-
-### Home Page (Not logged in)
-![Home Page](./screenshots/Screenshot%202025-05-26%20at%202.14.34%20PM.png)
-
-### Home Page (Logged in)
-![Home Page - Logged In](./screenshots/Screenshot%202025-05-26%20at%202.15.00%20PM.png)
-
-### Past Meetings
-![Past Meetings](./screenshots/Screenshot%202025-05-26%20at%202.15.15%20PM.png)
-
-### Meeting Room
-![Meeting Room](./screenshots/Screenshot%202025-05-26%20at%202.16.06%20PM.png)
-
----
-
 ## 🛠️ Tech Stack
 
 - **Frontend:** React.js, Tailwind CSS
